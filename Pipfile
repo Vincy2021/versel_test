@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[requires]
+# 指定 Python 版本为 3.9
+python_version = "3.9"
+
+[packages]
+# 基础项目暂时不需要额外依赖
+# 如果后续需要可以添加，例如：
+# requests = "*"
+# flask = "*"
+
+[dev-packages] 
