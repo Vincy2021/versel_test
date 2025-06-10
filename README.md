@@ -92,7 +92,7 @@ curl https://your-project.vercel.app/api/app/health
 ```txt
 fastapi==0.104.1
 uvicorn==0.24.0
-mangum==0.17.0
+mangum==0.16.0
 ```
 
 ### vercel.json 路由配置
@@ -123,7 +123,24 @@ mangum = "*"
 ## 依赖说明
 - `fastapi==0.104.1`: 现代 Python Web 框架
 - `uvicorn==0.24.0`: ASGI 服务器
-- `mangum==0.17.0`: FastAPI 的 Serverless 适配器
+- `mangum==0.16.0`: FastAPI 的 Serverless 适配器
+
+## 关键代码说明
+
+### FastAPI + Mangum 集成
+```python
+from fastapi import FastAPI
+from mangum import Mangum
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello from FastAPI on Vercel!"}
+
+# 重要：使用 Mangum 而不是 Adapter
+handler = Mangum(app)
+```
 
 ## 访问方式对比
 
@@ -137,7 +154,7 @@ mangum = "*"
 - Vercel 自动检测到 `requirements.txt` 和 `Pipfile` 使用 Python 运行时
 - `requirements.txt` 确保 FastAPI 相关依赖正确安装
 - `vercel.json` 自定义路由规则，让 FastAPI 可以根路径访问
-- `mangum` 将 FastAPI 应用适配为 Serverless Functions
+- `Mangum` 将 FastAPI 应用适配为 Serverless Functions
 
 ## 🎯 推荐测试流程
 1. 访问 `https://your-project.vercel.app/` 验证 FastAPI 主页
@@ -146,8 +163,9 @@ mangum = "*"
 4. 使用 POST 请求测试 `https://your-project.vercel.app/echo` 端点
 
 ## 🐛 故障排除
-- 如果遇到模块找不到的错误，确保 `requirements.txt` 包含所有必要依赖
-- 部署时的 builds 警告已通过简化 `vercel.json` 配置解决
-- 如果依赖安装失败，可以删除 `Pipfile` 只保留 `requirements.txt`
+- **mangum 导入错误**: 新版本使用 `from mangum import Mangum` 而不是 `Adapter`
+- **依赖安装**: 确保 `requirements.txt` 包含正确版本的依赖
+- **构建警告**: 已通过简化 `vercel.json` 配置解决
+- **版本兼容**: 使用稳定版本 mangum==0.16.0 避免 API 变更问题
 
-现在您的 FastAPI 应用应该能够正确安装依赖并正常运行了！ 🚀 
+现在您的 FastAPI 应用应该能够正确运行了！ 🚀 

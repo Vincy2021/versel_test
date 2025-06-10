@@ -36,5 +36,5 @@ def echo_data(data: dict):
     }
 
 # Vercel 需要一个 handler 函数
-from mangum import Adapter
-handler = Adapter(app) 
+from mangum import Mangum
+handler = Mangum(app) 
