@@ -85,16 +85,9 @@ curl https://your-project.vercel.app/api/hello
 fastapi==0.104.1
 ```
 
-### vercel.json 路由配置
+### vercel.json 路由配置（简化版）
 ```json
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/*.py",
-      "use": "@vercel/python"
-    }
-  ],
   "routes": [
     { "src": "/(.*)", "dest": "api/app.py" }
   ]
@@ -104,6 +97,7 @@ fastapi==0.104.1
 **路由规则说明：**
 - 所有请求都路由到 `api/app.py`，由 FastAPI 应用处理路由分发
 - 基础 Python 函数通过 `/api/hello` 路径访问
+- **无需 builds 配置** - Vercel 自动检测 Python 项目
 
 ### Pipfile 依赖管理
 ```toml
@@ -159,8 +153,9 @@ class handler(BaseHTTPRequestHandler):
 
 ## 工作原理
 - Vercel 自动检测 `app` 变量作为 ASGI 应用
+- 通过 `requirements.txt` 和 `Pipfile` 自动识别 Python 项目
 - 不需要 Mangum 适配器，Vercel 内置 ASGI 支持
-- `vercel.json` 将所有请求路由到 FastAPI 应用
+- `vercel.json` 只配置路由，无需 builds 配置
 - FastAPI 负责内部路由分发
 
 ## 🎯 推荐测试流程
@@ -172,8 +167,9 @@ class handler(BaseHTTPRequestHandler):
 
 ## 🐛 故障排除
 - **issubclass 错误**: 已通过删除 `handler = Mangum(app)` 解决
+- **builds 警告**: 已通过删除 `builds` 配置解决，让 Vercel 自动检测
 - **依赖简化**: 只需要 `fastapi`，Vercel 自动处理 ASGI
 - **路由配置**: 所有请求都交给 FastAPI 处理，更简洁
 - **ASGI 自动检测**: Vercel 会自动识别 `app` 变量作为 ASGI 应用
 
-现在您的应用应该能够正常运行，没有 issubclass 错误了！ 🚀 
+现在您的应用应该能够正常运行，且没有任何警告了！ 🚀 
