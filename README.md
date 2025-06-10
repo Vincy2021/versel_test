@@ -10,8 +10,8 @@ velcel项目部署测试/
 │   ├── hello.py          # 基础 Python API 函数
 │   └── app.py           # FastAPI 应用
 ├── Pipfile              # Python 环境配置
+├── requirements.txt      # Python 依赖（主要依赖文件）
 ├── vercel.json          # Vercel 路由配置
-├── requirements.txt      # Python 依赖（可选，本地开发用）
 ├── .gitignore           # Git 忽略文件
 └── README.md            # 项目说明
 ```
@@ -88,16 +88,16 @@ curl https://your-project.vercel.app/api/app/health
 
 ## 配置文件说明
 
+### requirements.txt（主要依赖）
+```txt
+fastapi==0.104.1
+uvicorn==0.24.0
+mangum==0.17.0
+```
+
 ### vercel.json 路由配置
 ```json
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/*.py",
-      "use": "@vercel/python"
-    }
-  ],
   "routes": [
     { "src": "/", "dest": "api/app.py" },
     { "src": "/api/(.*)", "dest": "api/$1.py" }
@@ -109,7 +109,7 @@ curl https://your-project.vercel.app/api/app/health
 - `"/" → "api/app.py"` - 根路径直接访问 FastAPI 应用
 - `"/api/(.*)" → "api/$1.py"` - `/api/` 路径按文件名路由
 
-### Pipfile 依赖管理
+### Pipfile 依赖管理（备用）
 ```toml
 [requires]
 python_version = "3.10"
@@ -121,9 +121,9 @@ mangum = "*"
 ```
 
 ## 依赖说明
-- `fastapi`: 现代 Python Web 框架
-- `uvicorn`: ASGI 服务器
-- `mangum`: FastAPI 的 Serverless 适配器
+- `fastapi==0.104.1`: 现代 Python Web 框架
+- `uvicorn==0.24.0`: ASGI 服务器
+- `mangum==0.17.0`: FastAPI 的 Serverless 适配器
 
 ## 访问方式对比
 
@@ -134,10 +134,10 @@ mangum = "*"
 | 基础函数 | ❌ 不适用 | `https://your-app.vercel.app/api/hello` |
 
 ## 工作原理
-- Vercel 检测到 `Pipfile` 自动使用 Python 运行时
+- Vercel 自动检测到 `requirements.txt` 和 `Pipfile` 使用 Python 运行时
+- `requirements.txt` 确保 FastAPI 相关依赖正确安装
 - `vercel.json` 自定义路由规则，让 FastAPI 可以根路径访问
 - `mangum` 将 FastAPI 应用适配为 Serverless Functions
-- 支持多种访问方式，灵活性更强
 
 ## 🎯 推荐测试流程
 1. 访问 `https://your-project.vercel.app/` 验证 FastAPI 主页
@@ -145,4 +145,9 @@ mangum = "*"
 3. 访问 `https://your-project.vercel.app/api/hello` 验证基础函数
 4. 使用 POST 请求测试 `https://your-project.vercel.app/echo` 端点
 
-现在您的 FastAPI 应用既可以通过根路径直接访问，也保持了传统 API 路径的兼容性！ 🚀 
+## 🐛 故障排除
+- 如果遇到模块找不到的错误，确保 `requirements.txt` 包含所有必要依赖
+- 部署时的 builds 警告已通过简化 `vercel.json` 配置解决
+- 如果依赖安装失败，可以删除 `Pipfile` 只保留 `requirements.txt`
+
+现在您的 FastAPI 应用应该能够正确安装依赖并正常运行了！ 🚀 
