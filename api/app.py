@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-import uvicorn
 from datetime import datetime
 
 # 创建 FastAPI 应用实例
@@ -33,8 +31,4 @@ def echo_data(data: dict):
         "message": "Data received successfully",
         "received_data": data,
         "timestamp": datetime.now().isoformat()
-    }
-
-# Vercel 需要一个 handler 函数
-from mangum import Mangum
-handler = Mangum(app) 
+    } 

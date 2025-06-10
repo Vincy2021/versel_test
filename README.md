@@ -1,16 +1,16 @@
 # Vercel Python 项目基础测试
 
 ## 项目简介
-这是一个 Vercel Python 无服务器函数部署测试项目，包含基础 Python 函数和 FastAPI 应用示例。使用自定义路由配置，让 FastAPI 应用可以直接通过根路径访问。
+这是一个 Vercel Python 无服务器函数部署测试项目，包含基础 Python 函数和 FastAPI 应用示例。FastAPI 应用直接导出为 ASGI 应用，让 Vercel 自动检测和运行。
 
 ## 项目结构
 ```
 velcel项目部署测试/
 ├── api/
 │   ├── hello.py          # 基础 Python API 函数
-│   └── app.py           # FastAPI 应用
+│   └── app.py           # FastAPI 应用（主应用）
 ├── Pipfile              # Python 环境配置
-├── requirements.txt      # Python 依赖（主要依赖文件）
+├── requirements.txt      # Python 依赖
 ├── vercel.json          # Vercel 路由配置
 ├── .gitignore           # Git 忽略文件
 └── README.md            # 项目说明
@@ -18,11 +18,11 @@ velcel项目部署测试/
 
 ## 功能
 - 基础的 Python HTTP 函数
-- FastAPI 应用框架，支持根路径直接访问
+- FastAPI 应用框架，直接通过根路径访问
 - 返回 JSON 格式响应  
-- Vercel 自动检测 Python 3.10 环境
+- Vercel 自动检测 Python 3.10 环境和 ASGI 应用
 - RESTful API 设计
-- 自定义路由配置
+- 简化的路由配置
 
 ## 部署步骤
 
@@ -73,17 +73,9 @@ curl -X POST \
 
 ### 📡 基础 Python 函数
 ```bash
-# GET 请求
+# 基础函数
 curl https://your-project.vercel.app/api/hello
 # 返回: Hello from Python on Vercel!
-```
-
-### 🔄 传统路径访问（仍然有效）
-```bash
-# FastAPI 应用也可以通过 /api/ 路径访问
-curl https://your-project.vercel.app/api/app
-curl https://your-project.vercel.app/api/app/info
-curl https://your-project.vercel.app/api/app/health
 ```
 
 ## 配置文件说明
@@ -91,81 +83,97 @@ curl https://your-project.vercel.app/api/app/health
 ### requirements.txt（主要依赖）
 ```txt
 fastapi==0.104.1
-uvicorn==0.24.0
-mangum==0.16.0
 ```
 
 ### vercel.json 路由配置
 ```json
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/*.py",
+      "use": "@vercel/python"
+    }
+  ],
   "routes": [
-    { "src": "/", "dest": "api/app.py" },
-    { "src": "/api/(.*)", "dest": "api/$1.py" }
+    { "src": "/(.*)", "dest": "api/app.py" }
   ]
 }
 ```
 
 **路由规则说明：**
-- `"/" → "api/app.py"` - 根路径直接访问 FastAPI 应用
-- `"/api/(.*)" → "api/$1.py"` - `/api/` 路径按文件名路由
+- 所有请求都路由到 `api/app.py`，由 FastAPI 应用处理路由分发
+- 基础 Python 函数通过 `/api/hello` 路径访问
 
-### Pipfile 依赖管理（备用）
+### Pipfile 依赖管理
 ```toml
 [requires]
 python_version = "3.10"
 
 [packages]
 fastapi = "*"
-uvicorn = "*"
-mangum = "*"
+uvicorn = "*"  # 本地开发用
 ```
 
 ## 依赖说明
 - `fastapi==0.104.1`: 现代 Python Web 框架
-- `uvicorn==0.24.0`: ASGI 服务器
-- `mangum==0.16.0`: FastAPI 的 Serverless 适配器
+- `uvicorn`: 本地开发用 ASGI 服务器
 
 ## 关键代码说明
 
-### FastAPI + Mangum 集成
+### FastAPI 应用（无需 Mangum）
 ```python
 from fastapi import FastAPI
-from mangum import Mangum
+from datetime import datetime
 
-app = FastAPI()
+# 直接创建 FastAPI 应用，Vercel 自动检测
+app = FastAPI(title="Vercel FastAPI 测试", version="1.0.0")
 
 @app.get("/")
 def read_root():
     return {"message": "Hello from FastAPI on Vercel!"}
 
-# 重要：使用 Mangum 而不是 Adapter
-handler = Mangum(app)
+# 注意：不需要 handler = Mangum(app)
 ```
 
-## 访问方式对比
+### 基础 Python 函数
+```python
+from http.server import BaseHTTPRequestHandler
 
-| 端点类型 | 根路径访问 | 传统路径访问 |
-|---------|-----------|-------------|
-| FastAPI 主页 | `https://your-app.vercel.app/` | `https://your-app.vercel.app/api/app` |
-| FastAPI 信息 | `https://your-app.vercel.app/info` | `https://your-app.vercel.app/api/app/info` |
-| 基础函数 | ❌ 不适用 | `https://your-app.vercel.app/api/hello` |
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write("Hello from Python on Vercel!".encode('utf-8'))
+```
+
+## 访问方式
+
+| 端点类型 | URL | 描述 |
+|---------|-----|-----|
+| FastAPI 主页 | `https://your-app.vercel.app/` | FastAPI 应用根路径 |
+| FastAPI 信息 | `https://your-app.vercel.app/info` | 应用信息 |
+| FastAPI 健康检查 | `https://your-app.vercel.app/health` | 健康状态 |
+| 基础函数 | `https://your-app.vercel.app/api/hello` | 简单文本响应 |
 
 ## 工作原理
-- Vercel 自动检测到 `requirements.txt` 和 `Pipfile` 使用 Python 运行时
-- `requirements.txt` 确保 FastAPI 相关依赖正确安装
-- `vercel.json` 自定义路由规则，让 FastAPI 可以根路径访问
-- `Mangum` 将 FastAPI 应用适配为 Serverless Functions
+- Vercel 自动检测 `app` 变量作为 ASGI 应用
+- 不需要 Mangum 适配器，Vercel 内置 ASGI 支持
+- `vercel.json` 将所有请求路由到 FastAPI 应用
+- FastAPI 负责内部路由分发
 
 ## 🎯 推荐测试流程
 1. 访问 `https://your-project.vercel.app/` 验证 FastAPI 主页
 2. 访问 `https://your-project.vercel.app/health` 检查应用状态
-3. 访问 `https://your-project.vercel.app/api/hello` 验证基础函数
+3. 访问 `https://your-project.vercel.app/info` 查看应用信息
 4. 使用 POST 请求测试 `https://your-project.vercel.app/echo` 端点
+5. 访问 `https://your-project.vercel.app/api/hello` 测试基础函数
 
 ## 🐛 故障排除
-- **mangum 导入错误**: 新版本使用 `from mangum import Mangum` 而不是 `Adapter`
-- **依赖安装**: 确保 `requirements.txt` 包含正确版本的依赖
-- **构建警告**: 已通过简化 `vercel.json` 配置解决
-- **版本兼容**: 使用稳定版本 mangum==0.16.0 避免 API 变更问题
+- **issubclass 错误**: 已通过删除 `handler = Mangum(app)` 解决
+- **依赖简化**: 只需要 `fastapi`，Vercel 自动处理 ASGI
+- **路由配置**: 所有请求都交给 FastAPI 处理，更简洁
+- **ASGI 自动检测**: Vercel 会自动识别 `app` 变量作为 ASGI 应用
 
-现在您的 FastAPI 应用应该能够正确运行了！ 🚀 
+现在您的应用应该能够正常运行，没有 issubclass 错误了！ 🚀 
